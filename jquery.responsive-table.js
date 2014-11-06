@@ -29,7 +29,9 @@
       collapseAlways: [],
       // Collapsed header text direction: 'tb'- top to bottom; 'bt' - bottom to
       // top. Text styling is done via css.
-      textDirection: 'tb'
+      textDirection: 'tb',
+      // Wrap table in scroll container.
+      scrollContainer: false
     };
 
   function Plugin(element, options) {
@@ -138,6 +140,10 @@
 
       // Add processed class.
       plugin.$element.addClass('js-responsive-table-processed');
+
+      if (plugin.settings.scrollContainer) {
+        plugin.initScrollContainer();
+      }
 
       // Cache table container.
       plugin.$container = plugin.$element.parent();
@@ -530,6 +536,13 @@
     },
     getTextDirectionClass: function () {
       return 'align-' + this.settings.textDirection;
+    },
+    initScrollContainer: function () {
+      var $wrap = $('<div></div>').css({
+        overflow: 'hidden',
+        overflowX: 'scroll'
+      });
+      this.$element.wrap($wrap);
     }
   });
 
