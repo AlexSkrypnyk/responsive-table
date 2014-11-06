@@ -17,16 +17,19 @@
 /**
  * Rotate mixin with IE support.
  */
-table .js-head-collapsed {
+table .js-head-collapsed,
+table .js-cell-replacement {
   vertical-align: top;
 }
-table .js-head-collapsed .js-vertical-text {
+table .js-head-collapsed .js-vertical-text,
+table .js-cell-replacement .js-vertical-text {
   display: inline-block;
   overflow: hidden;
   width: 1em;
   padding-top: 1em;
 }
-table .js-head-collapsed .js-vertical-text .js-vertical-text--inner {
+table .js-head-collapsed .js-vertical-text .js-vertical-text--inner,
+table .js-cell-replacement .js-vertical-text .js-vertical-text--inner {
   display: inline-block;
   white-space: nowrap;
   line-height: 1;
@@ -44,7 +47,8 @@ table .js-head-collapsed .js-vertical-text .js-vertical-text--inner {
   zoom: 1;
   transform-origin: 1em 0;
 }
-table .js-head-collapsed .js-vertical-text .js-vertical-text--inner:after {
+table .js-head-collapsed .js-vertical-text .js-vertical-text--inner:after,
+table .js-cell-replacement .js-vertical-text .js-vertical-text--inner:after {
   content: '';
   display: block;
   margin: -1.5em 0 100%;

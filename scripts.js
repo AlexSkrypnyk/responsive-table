@@ -30,7 +30,28 @@
       collapseDirection: 'ltr'
     });
 
-    ////////////////////////////////////////////////////////////////////////////
+    $('.table5').responsiveTable({
+      emptyHeader: true
+    });
+
+    $('.table51').responsiveTable({
+      emptyHeader: true
+    });
+
+    $('.table52').responsiveTable({
+      emptyHeader: true,
+      start: 2
+    });
+
+    $('.table53').responsiveTable({
+      emptyHeader: true
+    });
+
+    $('.table54').responsiveTable({
+      emptyHeader: true
+    });
+
+      ////////////////////////////////////////////////////////////////////////////
     // TEST PAGE SCRIPTS
     ////////////////////////////////////////////////////////////////////////////
     var toRange = function (x, min, max, minr, maxr) {

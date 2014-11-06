@@ -94,12 +94,12 @@
 
       // Bind expand trigger click event.
       $(plugin.$element).delegate('.' + plugin.settings.expandTriggerClass, 'click', function () {
-        plugin.expandColumn($(this).parents('th:first').index(), true);
+        plugin.expandColumn(plugin.getColumnFromTrigger($(this)), true);
       });
 
       // Bind collapse trigger click event.
       $(plugin.$element).delegate('.' + plugin.settings.collapseTriggerClass, 'click', function () {
-        plugin.collapseColumn($(this).parents('th:first').index());
+        plugin.collapseColumn(plugin.getColumnFromTrigger($(this)));
       });
     },
     /**
@@ -310,36 +310,136 @@
       }
       return '';
     },
+    /**
+     * Router function for specific collapse handler.
+     */
     collapseColumn: function (idx) {
-      var th = this.$header.eq(idx);
-      if (!th.hasClass('js-head-collapsed')) {
-        th.addClass('js-head-collapsed');
-        th.attr('rowspan', this.$rows.length + 1);
-        if (th.find('.js-vertical-text').length == 0) {
-          th.wrapInner('<div class="js-vertical-text"><div class="js-vertical-text--inner"></div></div>');
+      if (this.settings.emptyHeader) {
+        this.collapseColumnNoHeader(idx);
+      }
+      else {
+        this.collapseColumnHeader(idx);
+      }
+    },
+    collapseColumnHeader: function (idx) {
+      var $th = this.$header.eq(idx);
+      if (!$th.hasClass('js-head-collapsed')) {
+        $th.addClass('js-head-collapsed');
+        $th.attr('rowspan', this.$rows.length + 1);
+        if ($th.find('.js-vertical-text').length == 0) {
+          $th.wrapInner('<div class="js-vertical-text"><div class="js-vertical-text--inner"></div></div>');
         }
         // Detach trigger to preserve events.
-        th.find('.' + this.settings.collapseTriggerClass).remove();
-        if (th.find('.' + this.settings.expandTriggerClass).length == 0) {
-          th.prepend(this.triggerHtml('expand'));
+        $th.find('.' + this.settings.collapseTriggerClass).remove();
+        if ($th.find('.' + this.settings.expandTriggerClass).length == 0) {
+          $th.prepend(this.triggerHtml('expand'));
         }
 
         this.columns[idx].addClass('js-cell-collapsed');
       }
     },
+    collapseColumnNoHeader: function (idx) {
+      var $th = this.$header.eq(idx);
+      if (!$th.hasClass('js-head-collapsed')) {
+        //Inject empty header.
+        $th.before($th.clone().html('').addClass('js-cell-replacement'));
+        $th.addClass('js-head-collapsed');
+        $th.attr('rowspan', this.$rows.length + 1);
+        if ($th.find('.js-vertical-text').length == 0) {
+          $th.wrapInner('<div class="js-vertical-text"><div class="js-vertical-text--inner"></div></div>');
+        }
+
+        // Detach trigger to preserve events.
+        $th.find('.' + this.settings.collapseTriggerClass).remove();
+        if ($th.find('.' + this.settings.expandTriggerClass).length == 0) {
+          $th.prepend(this.triggerHtml('expand'));
+        }
+
+        var $newTh = $th.clone(true, true);
+        $th.hide();
+        $newTh.addClass('js-cell-replacement');
+        $newTh.attr('rowspan', this.$rows.length);
+
+        this.columns[idx].addClass('js-cell-collapsed');
+        // Add new header cell before first cell of current column.
+        this.columns[idx].eq(0).before($newTh);
+      }
+    },
+    /**
+     * Router function for specific expand handler.
+     */
     expandColumn: function (idx, needTrigger) {
-      var th = this.$header.eq(idx);
-      if (th.hasClass('js-head-collapsed')) {
-        th.removeClass('js-head-collapsed');
-        th.removeAttr('rowspan');
-        th.find('.' + this.settings.expandTriggerClass).remove();
-        th.html(th.find('.js-vertical-text--inner').html());
-        if (th.find('.' + this.settings.collapseTriggerClass).length == 0 && needTrigger) {
-          th.prepend(this.triggerHtml('collapse'));
+      if (this.settings.emptyHeader) {
+        this.expandColumnNoHeader(idx, needTrigger);
+      }
+      else {
+        this.expandColumnHeader(idx, needTrigger);
+      }
+    },
+    expandColumnHeader: function (idx, needTrigger) {
+      var $th = this.$header.eq(idx);
+      if ($th.hasClass('js-head-collapsed')) {
+        $th.removeClass('js-head-collapsed');
+        $th.removeAttr('rowspan');
+        $th.find('.' + this.settings.expandTriggerClass).remove();
+        $th.html($th.find('.js-vertical-text--inner').html());
+        if ($th.find('.' + this.settings.collapseTriggerClass).length == 0 && needTrigger) {
+          $th.prepend(this.triggerHtml('collapse'));
         }
 
         this.columns[idx].removeClass('js-cell-collapsed');
       }
+    },
+    expandColumnNoHeader: function (idx, needTrigger) {
+      var $th = this.$header.eq(idx);
+      if ($th.hasClass('js-head-collapsed')) {
+        $th.removeClass('js-head-collapsed');
+        $th.removeAttr('rowspan');
+        $th.find('.' + this.settings.expandTriggerClass).remove();
+        $th.html($th.find('.js-vertical-text--inner').html());
+        if ($th.find('.' + this.settings.collapseTriggerClass).length == 0 && needTrigger) {
+          $th.prepend(this.triggerHtml('collapse'));
+        }
+
+        // Remove injected header.
+        $th.prev('.js-cell-replacement').remove();
+        // Remove injected cell.
+        this.columns[idx].eq(0).prev('.js-cell-replacement').remove();
+
+        this.columns[idx].removeClass('js-cell-collapsed');
+        $th.show();
+      }
+    },
+    getColumnFromTrigger: function ($trigger) {
+      var $th = $trigger.parents('th:first'),
+        $container = $th.parent(),
+        idx = 0;
+
+      // If parent container is a row from table body search using closes match.
+      if ($container.get(0) == this.$rows.get(0)) {
+        return this.findClosestColumn($th);
+      }
+
+      // Otherwise assume that parent container is header row.
+      for (var i = 0; i < $container.children().length; i++) {
+        if ($container.children().get(i) == $th.get(0)) {
+          break;
+        }
+        if (!$container.children().eq(i).hasClass('js-cell-replacement')) {
+          idx++;
+        }
+      }
+
+      return idx;
+    },
+    findClosestColumn: function ($cell) {
+      for (var idx in this.columns) {
+        if (this.columns[idx].eq(0).prev().get(0) == $cell.get(0)) {
+          return idx;
+        }
+      }
+
+      return false;
     }
   });
 

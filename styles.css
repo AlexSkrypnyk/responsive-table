@@ -22,8 +22,6 @@ th {
   width: 80%;
   margin: 0 auto;
   margin-top: 80px;
-  border-left: solid 1px black;
-  border-right: solid 1px black;
 }
 .panel {
   padding: 1em;
@@ -31,6 +29,7 @@ th {
   top: 0;
   width: 100%;
   background: #eaeaea;
+  z-index: 10;
 }
 .panel .panel-inner {
   width: 80%;
@@ -48,9 +47,8 @@ pre code {
   font-size: 0.75em;
 }
 .js-table-container {
-  margin: 0 auto;
-  border-left: solid 1px red;
-  border-right: solid 1px red;
+  margin: 1em auto;
+  border: solid 1px red;
 }
 .js-collapsible {
   border: none;
