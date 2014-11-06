@@ -7,6 +7,10 @@
   var pluginName = 'responsiveTable',
     version = '0.1',
     defaults = {
+      // Responsive mode: 'auto' to collapse/expand automatically when container
+      // dimensions change; 'all' to collapse/expand all items when table does
+      // not fit container. expandAlways and collapseAlways are respected.
+      responsiveMode: 'auto',
       // Collapsible columns start position: first, last, number.
       start: 'last',
       // Collapse direction: rtl, ltr.
@@ -47,48 +51,11 @@
       plugin.columnMinWidths = [];
 
       $(window).on('resizeEnd', function (evt, forceRefresh) {
-        // Gather minimum widths of the table, but only if smaller than container.
-        // This is required to calculate whether it is required to collapse/expand
-        // columns.
-        // @note: If content of the cell changes based on the size of the font
-        // when breakpoint changes, this needs to be called to refresh inner
-        // values. But even then, values will be taken from already collapsed
-        // cells. There is no solution here to calculate columns width without
-        // resetting whole table, which would lead to major visual issues.
-        if (plugin.$element.outerWidth() > plugin.$container.width()) {
-          plugin.gatherMinWidths();
+        if (plugin.settings.responsiveMode == 'all') {
+          plugin.responsiveAll();
         }
-
-        // Get start column to traverse through.
-        var current = plugin.initCurrent();
-
-        // Collapse each column until table becomes smaller than container.
-        // We also using a guard to avoid infinite loop.
-        while (plugin.$element.outerWidth() > plugin.$container.width() && current !== false) {
-          plugin.collapseColumn(current);
-          current = plugin.getNext(current);
-          $(plugin.$element).trigger('responsiveTable.tableCollapse');
-        }
-
-        // Expand each column, but only if minimal table width in known.
-        if (plugin.columnMinWidths.length > 0) {
-          // Get width of all collapsed columns.
-          plugin.gatherCollapsedWidths();
-
-          // Traverse through all collapsed columns and check whether it is
-          // possible to expand any of them without exceeding container width.
-          current = plugin.initCurrent(true);
-          //current = plugin.initCurrent();
-          while (current !== false) {
-            if (plugin.columnCollapsedWidths[current]) {
-              var predictedWidth = plugin.getPredictedWidth(current);
-              if (predictedWidth < plugin.$container.width()) {
-                // Expand current column, but do not add collapse trigger.
-                plugin.expandColumn(current, false);
-              }
-            }
-            current = plugin.getNext(current, true);
-          }
+        else {
+          plugin.responsiveAuto();
         }
       }).trigger('resizeEnd');
 
@@ -101,6 +68,62 @@
       $(plugin.$element).delegate('.' + plugin.settings.collapseTriggerClass, 'click', function () {
         plugin.collapseColumn(plugin.getColumnFromTrigger($(this)));
       });
+    },
+    responsiveAll: function () {
+      var collapse = this.$element.outerWidth() > this.$container.width();
+      for (var idx in this.columns) {
+        if (collapse) {
+          this.collapseColumn(parseInt(idx, 10));
+        }
+        else {
+          this.expandColumn(parseInt(idx, 10));
+        }
+      }
+    },
+    responsiveAuto: function () {
+      // Gather minimum widths of the table, but only if smaller than container.
+      // This is required to calculate whether it is required to collapse/expand
+      // columns.
+      // @note: If content of the cell changes based on the size of the font
+      // when breakpoint changes, this needs to be called to refresh inner
+      // values. But even then, values will be taken from already collapsed
+      // cells. There is no solution here to calculate columns width without
+      // resetting whole table, which would lead to major visual issues.
+      if (this.$element.outerWidth() > this.$container.width()) {
+        this.gatherMinWidths();
+      }
+
+      // Get start column to traverse through.
+      var current = this.initCurrent();
+
+      // Collapse each column until table becomes smaller than container.
+      // We also using a guard to avoid infinite loop.
+      while (this.$element.outerWidth() > this.$container.width() && current !== false) {
+        this.collapseColumn(current);
+        current = this.getNext(current);
+        $(this.$element).trigger('responsiveTable.tableCollapse');
+      }
+
+      // Expand each column, but only if minimal table width in known.
+      if (this.columnMinWidths.length > 0) {
+        // Get width of all collapsed columns.
+        this.gatherCollapsedWidths();
+
+        // Traverse through all collapsed columns and check whether it is
+        // possible to expand any of them without exceeding container width.
+        current = this.initCurrent(true);
+        //current = this.initCurrent();
+        while (current !== false) {
+          if (this.columnCollapsedWidths[current]) {
+            var predictedWidth = this.getPredictedWidth(current);
+            if (predictedWidth < this.$container.width()) {
+              // Expand current column, but do not add collapse trigger.
+              this.expandColumn(current, false);
+            }
+          }
+          current = this.getNext(current, true);
+        }
+      }
     },
     /**
      * Helper to init table variables.
@@ -132,8 +155,11 @@
       plugin.settings.expandAlways = plugin.parseRange(plugin.settings.expandAlways);
       plugin.settings.collapseAlways = plugin.parseRange(plugin.settings.collapseAlways);
 
-      for (var i = 0; i < plugin.settings.collapseAlways.length; i++) {
-        plugin.collapseColumn(plugin.settings.collapseAlways[i]);
+      plugin.initCollapseAlways();
+    },
+    initCollapseAlways: function () {
+      for (var i = 0; i < this.settings.collapseAlways.length; i++) {
+        this.collapseColumn(this.settings.collapseAlways[i]);
       }
     },
     /**
@@ -497,7 +523,8 @@
 
       return false;
     }
-  });
+  })
+  ;
 
   // A really lightweight plugin wrapper around the constructor,
   // preventing against multiple instantiations
