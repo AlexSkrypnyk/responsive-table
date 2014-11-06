@@ -51,7 +51,59 @@
       emptyHeader: true
     });
 
-      ////////////////////////////////////////////////////////////////////////////
+    $('.table6').responsiveTable({
+      expandAlways: [5, '*', 7]
+    });
+
+    $('.table61').responsiveTable({
+      collapseAlways: [5, '*', 7]
+    });
+
+    ////////////////////////////////////////////////////////////////////////////
+    // UNIT TESTS
+    ////////////////////////////////////////////////////////////////////////////
+    var plugin = $('.js-responsive-table-processed:first').data().plugin_responsiveTable;
+
+    var verbose = function(message){
+      message = message||'<br/>';
+      $('.js-unit-tests-container').append('<div>' + message + '</div>');
+    };
+
+    var assertEqual = function (val1, val2, message) {
+      message = message || '';
+      message = message == '' ? message : ' ' + message;
+      if (!$.isArray(val1)) {
+        var text = val1 + ' == ' + val2;
+        text = (val1 == val2 ? 'PASS: ' + text : 'FAIL: ' + text) + message;
+      }
+      else {
+        var valid = 0;
+        for (var i in val1) {
+          valid += val1[i] === val2[i];
+        }
+        var text = JSON.stringify(val1) + ' == ' + JSON.stringify(val2);
+        text = (valid == val1.length ? 'PASS: ' + text : 'FAIL: ' + text) + message;
+      }
+
+      verbose(text);
+    };
+
+    verbose('SELF TEST');
+    assertEqual(1, 1);
+    assertEqual('a', 'a');
+    assertEqual('a', 'b', 'expected fail');
+    assertEqual([1, 2, 3], [1, 2, 3]);
+    assertEqual([1, 2, 3], [1, 2, 4],  'expected fail');
+    verbose();
+    verbose('Test parseRange() function');
+    assertEqual(plugin.parseRange([1, 2, 3]), [1, 2, 3]);
+    assertEqual(plugin.parseRange(['first', 2, 'last']), [0, 2, 9]);
+    assertEqual(plugin.parseRange(['first', 2, '*', 5, 'last']), [0, 2, 3, 4, 5, 9]);
+    assertEqual(plugin.parseRange(['first', 2, '*', 5, '*', 'last']), [0, 2, 3, 4, 5, 6, 7, 8, 9]);
+    assertEqual(plugin.parseRange(['*']), [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
+    assertEqual(plugin.parseRange([2, '*']), [2, 3, 4, 5, 6, 7, 8, 9]);
+
+    ////////////////////////////////////////////////////////////////////////////
     // TEST PAGE SCRIPTS
     ////////////////////////////////////////////////////////////////////////////
     var toRange = function (x, min, max, minr, maxr) {

@@ -18,9 +18,9 @@
       // Push collapsed text outside of header.
       emptyHeader: false,
       // Array of permanently expanded columns: first, last, number, *.
-      expandAlways: ['first'],
+      expandAlways: [],
       // Array of permanently collapsed columns: first, last, number, *.
-      collapseAlways: [2, '*']
+      collapseAlways: []
     };
 
   function Plugin(element, options) {
@@ -128,6 +128,55 @@
 
       // Find maximum and minimum columns per row for the whole table.
       plugin.maxColumns = Object.keys(plugin.columns).length;
+
+      plugin.settings.expandAlways = plugin.parseRange(plugin.settings.expandAlways);
+      plugin.settings.collapseAlways = plugin.parseRange(plugin.settings.collapseAlways);
+
+      for (var i = 0; i < plugin.settings.collapseAlways.length; i++) {
+        plugin.collapseColumn(plugin.settings.collapseAlways[i]);
+      }
+    },
+    /**
+     * Helper to parse specified range into array of numbers.
+     *
+     * Available values: first, last, number, *
+     * Also, available range: 1,*,5,10 will have 1,2,3,4,5,10
+     */
+    parseRange: function (arr, min, max) {
+      var plugin = this,
+        newArr = [];
+
+      min = min || 0;
+      max = max || plugin.maxColumns - 1;
+
+      var prev = min;
+      for (var i = 0; i < arr.length; i++) {
+        if (arr[i] == 'first') {
+          newArr.push(min);
+        }
+        else if (arr[i] == 'last') {
+          newArr.push(max);
+        }
+        else if ($.isNumeric(arr[i])) {
+          newArr.push(arr[i] > 0 && arr[i] < plugin.maxColumns ? arr[i] : min);
+        }
+        else if (arr[i] == '*') {
+          // Complex case.
+          var seq = [];
+          var next = i + 1 < arr.length ? plugin.parseRange([arr[i + 1]], min, max) : [max];
+          next = next.pop();
+          for (var k = prev; k <= next; k++) {
+            seq.push(k);
+          }
+          newArr = $.merge(newArr, seq);
+        }
+        prev = newArr.length > 0 ? newArr[newArr.length - 1] : min;
+      }
+
+      // Return only unique array items.
+      return $.grep(newArr, function (el, index) {
+        return index == $.inArray(el, newArr);
+      });
     },
     /**
      * Gather minimum widths of table columns.
@@ -314,6 +363,10 @@
      * Router function for specific collapse handler.
      */
     collapseColumn: function (idx) {
+      if ($.inArray(idx, this.settings.expandAlways) != -1) {
+        return;
+      }
+
       if (this.settings.emptyHeader) {
         this.collapseColumnNoHeader(idx);
       }
@@ -369,6 +422,9 @@
      * Router function for specific expand handler.
      */
     expandColumn: function (idx, needTrigger) {
+      if ($.inArray(idx, this.settings.collapseAlways) != -1) {
+        return;
+      }
       if (this.settings.emptyHeader) {
         this.expandColumnNoHeader(idx, needTrigger);
       }

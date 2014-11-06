@@ -50,6 +50,9 @@ pre code {
   margin: 1em auto;
   border: solid 1px red;
 }
+.js-unit-tests-container {
+  margin: 1em;
+}
 .js-collapsible {
   border: none;
   margin: 1em;
