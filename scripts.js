@@ -65,13 +65,17 @@
       responsiveMode: 'all'
     });
 
+    $('.table7').responsiveTable({
+      textDirection: 'bt'
+    });
+
     ////////////////////////////////////////////////////////////////////////////
     // UNIT TESTS
     ////////////////////////////////////////////////////////////////////////////
     var plugin = $('.js-responsive-table-processed:first').data().plugin_responsiveTable;
 
-    var verbose = function(message){
-      message = message||'<br/>';
+    var verbose = function (message) {
+      message = message || '<br/>';
       $('.js-unit-tests-container').append('<div>' + message + '</div>');
     };
 
@@ -99,7 +103,7 @@
     assertEqual('a', 'a');
     assertEqual('a', 'b', 'expected fail');
     assertEqual([1, 2, 3], [1, 2, 3]);
-    assertEqual([1, 2, 3], [1, 2, 4],  'expected fail');
+    assertEqual([1, 2, 3], [1, 2, 4], 'expected fail');
     verbose();
     verbose('Test parseRange() function');
     assertEqual(plugin.parseRange([1, 2, 3]), [1, 2, 3]);

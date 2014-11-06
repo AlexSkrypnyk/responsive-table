@@ -24,7 +24,10 @@
       // Array of permanently expanded columns: first, last, number, *.
       expandAlways: [],
       // Array of permanently collapsed columns: first, last, number, *.
-      collapseAlways: []
+      collapseAlways: [],
+      // Collapsed header text direction: 'tb'- top to bottom; 'bt' - bottom to
+      // top. Text styling is done via css.
+      textDirection: 'tb'
     };
 
   function Plugin(element, options) {
@@ -403,7 +406,7 @@
     collapseColumnHeader: function (idx) {
       var $th = this.$header.eq(idx);
       if (!$th.hasClass('js-head-collapsed')) {
-        $th.addClass('js-head-collapsed');
+        $th.addClass('js-head-collapsed').addClass(this.getTextDirectionClass());
         $th.attr('rowspan', this.$rows.length + 1);
         if ($th.find('.js-vertical-text').length == 0) {
           $th.wrapInner('<div class="js-vertical-text"><div class="js-vertical-text--inner"></div></div>');
@@ -421,8 +424,8 @@
       var $th = this.$header.eq(idx);
       if (!$th.hasClass('js-head-collapsed')) {
         //Inject empty header.
-        $th.before($th.clone().html('').addClass('js-cell-replacement'));
-        $th.addClass('js-head-collapsed');
+        $th.before($th.clone().html('').addClass('js-cell-replacement').addClass(this.getTextDirectionClass()));
+        $th.addClass('js-head-collapsed').addClass(this.getTextDirectionClass());
         $th.attr('rowspan', this.$rows.length + 1);
         if ($th.find('.js-vertical-text').length == 0) {
           $th.wrapInner('<div class="js-vertical-text"><div class="js-vertical-text--inner"></div></div>');
@@ -436,7 +439,7 @@
 
         var $newTh = $th.clone(true, true);
         $th.hide();
-        $newTh.addClass('js-cell-replacement');
+        $newTh.addClass('js-cell-replacement').addClass(this.getTextDirectionClass());
         $newTh.attr('rowspan', this.$rows.length);
 
         this.columns[idx].addClass('js-cell-collapsed');
@@ -522,9 +525,11 @@
       }
 
       return false;
+    },
+    getTextDirectionClass: function () {
+      return 'align-' + this.settings.textDirection;
     }
-  })
-  ;
+  });
 
   // A really lightweight plugin wrapper around the constructor,
   // preventing against multiple instantiations

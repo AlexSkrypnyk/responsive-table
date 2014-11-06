@@ -41,7 +41,9 @@ table {
       overflow: hidden;
       width: 1em;
       padding-top: 1em;
+    }
 
+    &.align-tb {
       .js-vertical-text--inner {
         display: inline-block;
         white-space: nowrap;
@@ -53,6 +55,20 @@ table {
           content: '';
           display: block;
           margin: -1.5em 0 100%;
+        }
+      }
+    }
+    // @todo: Fix this styles.
+    &.align-bt {
+      .js-vertical-text--inner {
+        display: inline-block;
+        white-space: nowrap;
+        .rotate(-90deg);
+
+        &:after {
+          content: '';
+          display: block;
+          margin: 3em 0 0 0;
         }
       }
     }
