@@ -73,6 +73,29 @@
       scrollContainer: true
     });
 
+    $('.table9').responsiveTable({
+      scrollContainer: true
+    });
+
+    $('.table91').responsiveTable({
+      "responsiveMode": "auto",
+      "start": "last",
+      "collapseDirection": "rtl",
+      "expandTriggerClass": "js-expand-trigger",
+      "expandTriggerHtml": "+",
+      "collapseTriggerClass": "js-collapse-trigger",
+      "collapseTriggerHtml": "-",
+      "emptyHeader": false,
+      "expandAlways": [],
+      "collapseAlways": [
+        5,
+        6,
+        7
+      ],
+      "textDirection": "tb",
+      "scrollContainer": false
+    });
+
     ////////////////////////////////////////////////////////////////////////////
     // UNIT TESTS
     ////////////////////////////////////////////////////////////////////////////
