@@ -319,7 +319,7 @@
      */
     getColumns: function () {
       var cols = {},
-        spansMatrix = this.getSpanMatrix(),
+        spansMatrix = this.getSpanMatrix(this.$rows),
         idxHeader,
         idxHeaderSpanCurrent,
         spanHeader,
@@ -371,9 +371,9 @@
      * Each cell is a span value. Spanned cells are filled with zeros to
      * get complete matrix.
      */
-    getSpanMatrix: function () {
+    getSpanMatrix: function ($rows) {
       var m = [];
-      this.$rows.each(function (rowIdx) {
+      $rows.each(function (rowIdx) {
         m[rowIdx] = m[rowIdx] || [];
         $(this).find('td').each(function () {
           tdColspan = $(this).attr('colspan') !== undefined ? parseInt($(this).attr('colspan'), 10) : 1;
