@@ -84,6 +84,7 @@ table .js-collapse-trigger {
   line-height: 1;
   font-weight: normal;
 }
-table td.js-cell-collapsed {
+table td.js-cell-collapsed,
+table th.js-cell-collapsed {
   display: none;
 }

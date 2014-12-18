@@ -156,6 +156,12 @@
         $(this).children(':first').get(0).tagName.toLowerCase() != 'th';
       });
 
+      // forse config if markup contains thead section 
+      if (this.$element.children('thead').length > 0) {
+        plugin.settings.emptyHeader = true;
+      }
+      
+
       // Cache table columns. Each array element is a jQuery set of cells
       // suitable for expand/collapse manipulation.
       plugin.columns = plugin.getColumns(plugin.$element);
@@ -314,6 +320,125 @@
         return inverse ? 0 : this.maxColumns - 1;
       }
     },
+
+    _getTableScheme: function (table) {
+        var scheme = [];
+        // loop table rows 
+        for (var iRow = 0; iRow < table.rows.length; iRow++) {
+            var row = table.rows[iRow];
+            if (scheme[iRow] == null)
+                scheme[iRow] = [];
+            var schemeRow = scheme[iRow];
+            var nCol = 0;
+
+            // loop columns
+            for (var iCol = 0; iCol < row.cells.length; iCol++) {
+                var cell = row.cells[iCol];
+                var colSpan = 1;
+                var rowSpan = 1;
+                if (cell.colSpan != null && cell.colSpan > 1)
+                    colSpan = cell.colSpan;
+                if (cell.rowSpan != null && cell.rowSpan > 1)
+                    rowSpan = cell.rowSpan;
+
+                while (schemeRow[nCol] != null) nCol++;
+
+                for (var rsp = 0; rsp < rowSpan; rsp++) {
+                    for (var csp = 0; csp < colSpan; csp++) {
+                        if (scheme[iRow + rsp] == null)
+                            scheme[iRow + rsp] = [];
+
+                        scheme[iRow + rsp][nCol + csp] = {
+                            moreCols: colSpan - csp - 1,
+                            moreRows: rowSpan - rsp - 1,
+                            tableRow: iRow,
+                            tableCol: iCol,
+                            cell: cell
+                        };
+                    }
+                }
+                nCol += colSpan;
+            }
+        }
+
+        return scheme;
+    },
+
+    _getCollapsibleSpan : function (scheme, iCol, rowCount) {
+    	var hCell = scheme[0][iCol];
+    	var moreCols = hCell.moreCols;
+    	var extended = true;
+    	while (extended) {
+    		extended = false;
+	    	for (var ir =0; ir < rowCount; ir ++) {
+	    		for (var ic =0; ic < iCol + moreCols; ic ++) {
+	    			if (ic + scheme[ir][ic].moreCols > iCol + moreCols) {
+	    				moreCols = ic + scheme[ir][ic].moreCols - iCol;
+	    				extended = true;
+	    				break;
+	    			}
+	    		}
+	    	}
+	    }
+    	return moreCols + 1;
+    },
+
+	getCollapsibleHeaderCells : function () {
+		var theadCount = this.getHeaderRowsCount();
+		var scheme = this._getTableScheme(this.$element.get(0));
+		var iCol =0; 
+		var result = [];
+		while (iCol < scheme[0].length) {
+			var span = this._getCollapsibleSpan(scheme, iCol , theadCount);
+			var primaryCellScheme = scheme[0][iCol];
+			var headerInfo =  {
+				primaryCell : primaryCellScheme.cell,
+				secondaryCells : [],
+        bodyCells : [],
+				tableCol : primaryCellScheme.tableCol,
+				colspan : span
+			};
+			// collect seconday cells 
+			for (var ir =0; ir < theadCount; ir++){
+				for (var ic = iCol; ic < iCol + span; ic++ ) {
+					if (scheme[ir][ic].cell == primaryCellScheme.cell) continue;
+					var contains =false;
+					for (var j =0; j < headerInfo.secondaryCells.length; j ++)
+					{
+						if (scheme[ir][ic].cell == headerInfo.secondaryCells[j].cell) {
+							contains = true;
+							break;
+						}
+					}
+					if (!contains)
+						headerInfo.secondaryCells.push(scheme[ir][ic].cell);
+					/*
+					if (scheme[ir][ic].tableCol != primaryCellScheme.tableCol ||
+						scheme[ir][ic].tableRow != primaryCellScheme.tableRow)
+							.push(scheme[ir][ic].cell);
+					*/
+				}
+			}
+
+			result.push(headerInfo);
+			iCol += span;
+		}
+		return result;
+	},
+
+    getHeaderRowsCount : function () {
+    	var table = this.$element.get(0);
+    	for (var iRow = 0; iRow < table.rows.length; iRow++) {
+    		var $row = $(table.rows[iRow]);
+    		if ($row.parent().get(0).tagName.toLowerCase() == "thead")
+    		 	continue;
+    		var hasHeaderCells = false;
+    		if ($row.children(':first').get(0).tagName.toLowerCase() == 'th')
+    			continue;
+    		return iRow;
+    	}
+    },
+
     /**
      * Retrieves table columns suitable for DOM manipulation.
      */
@@ -324,12 +449,19 @@
         idxHeaderSpanCurrent,
         spanHeader,
         idxCurrentCell,
-        idxPrevCells;
+        idxPrevCells, 
+        headerInfo = this.getCollapsibleHeaderCells();
 
+      this.headerInfo = headerInfo;
       // Walk through header columns.
-      for (idxHeader = 0, idxHeaderSpan = 0; idxHeader < this.$header.length; idxHeader++) {
+      for (idxHeader = 0, idxHeaderSpan = 0; idxHeader < headerInfo.length; idxHeader++) {
         // Get span for header cell, if set, or default to 1.
-        spanHeader = this.$header.eq(idxHeader).attr('colspan') !== undefined ? parseInt(this.$header.eq(idxHeader).attr('colspan'), 10) : 1;
+        //spanHeader = this.$header.eq(idxHeader).attr('colspan') !== undefined ? parseInt(this.$header.eq(idxHeader).attr('colspan'), 10) : 1;
+        spanHeader = headerInfo[idxHeader].colspan;
+ 		    cols[idxHeader] = cols[idxHeader] || $();
+ 		    if (headerInfo[idxHeader].secondaryCells != null)
+	 		    for (var i = 0; i < headerInfo[idxHeader].secondaryCells.length; i ++)
+				    cols[idxHeader] = cols[idxHeader].add($(headerInfo[idxHeader].secondaryCells[i]));
 
         // Traverse all rows to find current column.
         this.$rows.each(function (rowIdx) {
@@ -352,7 +484,9 @@
 
             // Add current cell only if it exists in DOM (its span is non-zero).
             if (spansMatrix[rowIdx][idxHeaderSpanCurrent] > 0) {
-              cols[idxHeader] = cols[idxHeader].add($(this).find('td').eq(idxCurrentCell));
+              var cell = $(this).find('td').eq(idxCurrentCell);
+              headerInfo[idxHeader].bodyCells.push(cell);
+              cols[idxHeader] = cols[idxHeader].add(cell);
             }
             // Increment current header span.
             idxHeaderSpanCurrent++;
@@ -412,10 +546,12 @@
       }
     },
     collapseColumnHeader: function (idx) {
-      var $th = this.$header.eq(idx);
+      //var $th = this.$header.eq(idx);
+      var $th = $(this.headerInfo[idx].primaryCell);
+
       if (!$th.hasClass('js-head-collapsed')) {
         $th.addClass('js-head-collapsed').addClass(this.getTextDirectionClass());
-        $th.attr('rowspan', this.$rows.length + 1);
+        $th.attr('rowspan', this.$element.get(0).rows.length + 1);
         if ($th.find('.js-vertical-text').length == 0) {
           $th.wrapInner('<div class="js-vertical-text"><div class="js-vertical-text--inner"></div></div>');
         }
@@ -429,12 +565,18 @@
       }
     },
     collapseColumnNoHeader: function (idx) {
-      var $th = this.$header.eq(idx);
+      //var $th = this.$header.eq(idx);
+      var $th = $(this.headerInfo[idx].primaryCell);
       if (!$th.hasClass('js-head-collapsed')) {
         //Inject empty header.
-        $th.before($th.clone().html('').addClass('js-cell-replacement').addClass(this.getTextDirectionClass()));
+        var $thEmpty = $th.clone().html('').addClass('js-cell-replacement').addClass(this.getTextDirectionClass());
+        $th.before($thEmpty);
+        var headerRows = this.getHeaderRowsCount();
+
+        $thEmpty.attr('rowspan', headerRows);
+        $th.attr('data-idx', idx);
         $th.addClass('js-head-collapsed').addClass(this.getTextDirectionClass());
-        $th.attr('rowspan', this.$rows.length + 1);
+        $th.attr('rowspan', headerRows);
         if ($th.find('.js-vertical-text').length == 0) {
           $th.wrapInner('<div class="js-vertical-text"><div class="js-vertical-text--inner"></div></div>');
         }
@@ -448,11 +590,12 @@
         var $newTh = $th.clone(true, true);
         $th.hide();
         $newTh.addClass('js-cell-replacement').addClass(this.getTextDirectionClass());
-        $newTh.attr('rowspan', this.$rows.length);
+        $newTh.attr('rowspan', this.$element.get(0).rows.length -1);
 
         this.columns[idx].addClass('js-cell-collapsed');
         // Add new header cell before first cell of current column.
-        this.columns[idx].eq(0).before($newTh);
+        $(this.headerInfo[idx].bodyCells[0]).before($newTh);
+        //this.columns[idx].eq(0).before($newTh);
       }
     },
     /**
@@ -470,7 +613,8 @@
       }
     },
     expandColumnHeader: function (idx, needTrigger) {
-      var $th = this.$header.eq(idx);
+      //var $th = this.$header.eq(idx);
+      var $th = $(this.headerInfo[idx].primaryCell);
       if ($th.hasClass('js-head-collapsed')) {
         $th.removeClass('js-head-collapsed');
         $th.removeAttr('rowspan');
@@ -484,7 +628,8 @@
       }
     },
     expandColumnNoHeader: function (idx, needTrigger) {
-      var $th = this.$header.eq(idx);
+      //var $th = this.$header.eq(idx);
+      var $th = $(this.headerInfo[idx].primaryCell);
       if ($th.hasClass('js-head-collapsed')) {
         $th.removeClass('js-head-collapsed');
         $th.removeAttr('rowspan');
@@ -497,7 +642,8 @@
         // Remove injected header.
         $th.prev('.js-cell-replacement').remove();
         // Remove injected cell.
-        this.columns[idx].eq(0).prev('.js-cell-replacement').remove();
+        $(this.headerInfo[idx].bodyCells[0]).prev('.js-cell-replacement').remove();
+        //this.columns[idx].eq(0).prev('.js-cell-replacement').remove();
 
         this.columns[idx].removeClass('js-cell-collapsed');
         $th.show();
@@ -508,9 +654,25 @@
         $container = $th.parent(),
         idx = 0;
 
+      idx = this.findClosestColumn($th);
+      if (idx === false){
+        for (var i = 0; i < this.headerInfo.length; i ++)
+          if ($th.get(0) == this.headerInfo[i].primaryCell) {
+            idx = i;
+            break;
+          }
+      }
+      if (idx === false ) {
+        return $th.attr('data-idx');
+      }
+
+      /*
       // If parent container is a row from table body search using closes match.
-      if ($container.get(0) == this.$rows.get(0)) {
-        return this.findClosestColumn($th);
+      var headerRowsCount = this.getHeaderRowsCount();
+      for (var r = 0; r < headerRowsCount; r ++) {
+        if ($container.get(0) == this.$rows.get(r)) {
+          return this.findClosestColumn($th);
+        }
       }
 
       // Otherwise assume that parent container is header row.
@@ -522,7 +684,7 @@
           idx++;
         }
       }
-
+*/
       return idx;
     },
     findClosestColumn: function ($cell) {

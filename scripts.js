@@ -87,11 +87,7 @@
       "collapseTriggerHtml": "-",
       "emptyHeader": false,
       "expandAlways": [],
-      "collapseAlways": [
-        5,
-        6,
-        7
-      ],
+      "collapseAlways": [],
       "textDirection": "tb",
       "scrollContainer": false
     });
